@@ -1,0 +1,11 @@
+{
+  "name": "@quancheng/manto-service",
+  "version": "1.0.<time>",
+  "description": "manto-service-pb",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "quancheng",
+  "license": "ISC"
+}

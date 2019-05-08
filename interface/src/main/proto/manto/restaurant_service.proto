@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package com.quancheng.manto.service;
+
+option java_package = "com.quancheng.manto.service";
+option java_outer_classname = "RestaurantServiceProto";
+
+import "manto/restaurant.proto";
+
+service RestaurantService {
+    //餐厅搜索
+    rpc restaurantSearch (com.quancheng.manto.model.RestaurantSearchRequest) returns (com.quancheng.manto.model.RestaurantSearchResponse) {
+    }
+
+}

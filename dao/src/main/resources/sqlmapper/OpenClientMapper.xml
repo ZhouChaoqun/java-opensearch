@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.quancheng.manto.dao.OpenClientMapper">
+    <select id="unsignedOpenClientResIds" resultType="java.lang.String">
+          select restaurant_id
+            from cacia.unsigned_restaurant_client
+            where 1 = 1
+        <if test="startTime != null">
+            and gmt_modified <![CDATA[>=#{startTime} ]]>
+        </if>
+        group by restaurant_id
+    </select>
+    <select id="unsignedOpenClientByResId" resultType="com.quancheng.manto.dataobject.OpenClientDO">
+        select restaurant_id resId, group_concat(distinct client_id order by client_id separator ',') clientIds
+        from cacia.unsigned_restaurant_client
+        where status = 'BIND'
+        <if test="resIds != null and resIds.size() > 0">
+            and restaurant_id in
+            <foreach collection="resIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        group by restaurant_id
+    </select>
+    <update id="updateOpenClient">
+        update halia.halia_restaurant set open_client = #{openClient}
+        where restaurant_id = #{resId}
+        and type = #{type}
+    </update>
+    <update id="batchUpdateOpenClientEmpty">
+        update halia.halia_restaurant set open_client = null
+        where type = #{type}
+        and restaurant_id in
+        <foreach collection="resIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </update>
+</mapper>

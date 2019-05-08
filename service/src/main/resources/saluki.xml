@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean class="com.saluki.client.SalukiExportBean">
+		<property name="services">
+			<map>
+				<entry key="com.quancheng.manto.service.RestaurantService" value-ref="restaurantServiceImpl" />
+			</map>
+		</property>
+	</bean>
+
+	<!-- 示例
+	<bean class="com.saluki.client.SalukiReferenceBean">
+		<property name="serviceName" value="com.quancheng.zeus.service.AccountService" />
+		<property name="group" value="zeus-service"/>
+	</bean>
+
+	<bean class="com.saluki.client.SalukiReferenceBean">
+		<property name="serviceName" value="com.quancheng.zeus.service.CompanyService" />
+		<property name="group" value="zeus-service"/>
+	</bean>
+	-->
+
+</beans>

@@ -1,0 +1,168 @@
+syntax = "proto3";
+
+//option java_multiple_files = true;
+option java_package = "com.quancheng.manto.model";
+option java_outer_classname = "RestaurantModel";
+
+package com.quancheng.manto.model;
+
+import "manto/base.proto";
+
+message RestaurantInfo {
+    string id = 1;
+    string restaurantId = 2;
+    string amapId = 3;
+    string name = 4;
+    string address = 5;
+    string province = 6;
+    string city = 7;
+    string district = 8;
+    string contactPhone = 9;
+    double avg = 10;
+    repeated string category = 11;
+    string categoryAll = 12;
+    repeated string indoorUrls = 13;
+    string outdoorUrl = 14;
+    string type = 15;
+    string status = 16;
+    double rating = 17;
+    double latitude = 18;
+    double longitude = 19;
+    double distance = 20;
+    string mealType = 21;
+    string haveBox = 22;
+    string openingTime = 23;
+    string invoiceTitle = 24;
+    string taxIdentificationNumber = 25;
+    string foodSafetyArchives = 26;
+    string haveInvoice = 27;
+    string gonghaiId = 28;
+    string onlineRestaurantId = 29;
+    string disableMark = 30;
+    repeated string openClient = 31;
+    repeated string blacklistClient = 32;
+    string businessDistrict = 33;
+    string merchantId = 34;
+    string merchantName = 35;
+    string description = 36;
+    bool einvoice = 37;
+    int64 onlineTime = 38;
+    int64 createTime = 39;
+    int32 hitNum = 40;
+    bool supportReservation = 41;
+    bool supportTakeaway = 42;
+    int32 advanceHour = 43;
+    int32 advanceTime = 44;
+    bool needAdvance = 45;
+    int32 boxNum = 46;
+    string boxMinConsume = 47;
+    string deliveryDesc = 48;
+    int32 maxItems = 49;
+    string maxType = 50;
+    string cancelRule = 51;
+    double shippingDis = 52;
+    double shippingFee = 53;
+    double shippingFeeMin = 54;
+    double packingBoxFee = 55;
+    string settlementOwner = 56;
+    string settlementType = 57;
+    string rebateId = 58;
+    string rebateStatus = 59;
+    string rebateType = 60;
+    string rebateBizType = 61;
+    double rebatePercent = 62;
+    string rebateSettlementType = 63;
+    string rebateRule = 64;
+    int64 effectiveTime = 65;
+    string balanceAcountId = 66;
+    double totalAmount = 67;
+    double availableAmount = 68;
+    double frozenAmount = 69;
+    string txType = 70;
+}
+
+message RestaurantSearchRequest {
+    com.quancheng.manto.model.PageRequest pageRequest = 1;
+
+    repeated string id = 2;
+    //支持菜系，餐厅名，餐厅地址，省市区，餐厅类型(早餐，中餐，下午茶)等搜索
+    string search = 3;
+    repeated string restaurantId = 4;
+    repeated string amapId = 5;
+    string name = 6;
+    string address = 7;
+    string province = 8;
+    string city = 9;
+    string district = 10;
+    string contactPhone = 11;
+    repeated string category = 12;
+    repeated string categoryAll = 13;
+    repeated string type = 14;
+    string status = 15;
+    string latitude = 16;
+    string longitude = 17;
+    //搜索距离经纬度定位圆范围餐厅
+    double radius = 18;
+    repeated string mealType = 19;
+    repeated string haveBox = 20;
+    string openingTime = 21;
+    string invoiceTitle = 22;
+    string taxIdentificationNumber = 23;
+    string foodSafetyArchives = 24;
+    repeated string haveInvoice = 25;
+    repeated string gonghaiId = 26;
+    repeated string onlineRestaurantId = 27;
+    string disableMark = 28;
+    string openClient = 29;
+    string blacklistClient = 30;
+
+    //对应餐厅距离字段名
+    string sortBy = 31;
+
+    bool sortAsc = 32;
+
+    //以上哪些字段之间关系是或关系，取其字段名计入数组，剩余字段则默认为且关系
+    repeated string orRelationCols = 33;
+
+    //以上哪些字段是取非的
+    repeated string notRelationCols = 34;
+
+    //以上哪些字段是搜索空值的
+    repeated string emptySearchCols = 35;
+
+    //范围字段，跟老搜索规则一致，0~5，~5，0~，前后闭区间，不带符号则判等
+    string avgRange = 36;
+
+    //菜系统计
+    bool aggCategory = 37;
+
+    string merchantId = 38;
+
+    string merchantName = 39;
+
+    string businessDistrict = 40;
+
+    BoolValue supportReservation = 41;
+
+    BoolValue supportTakeaway = 42;
+
+    //是否外卖配送范围
+    bool takeawayRange = 43;
+
+    string settlementType = 44;
+
+    string rebateSettlementType = 45;
+
+    BoolValue einvoice = 46;
+}
+
+message RestaurantSearchResponse {
+
+    com.quancheng.manto.model.BaseResponse base = 1;
+
+    com.quancheng.manto.model.PageResponse pageResponse = 2;
+
+    repeated RestaurantInfo restaurantList = 3;
+
+    repeated com.quancheng.manto.model.CountAgg categoryList = 4;
+}

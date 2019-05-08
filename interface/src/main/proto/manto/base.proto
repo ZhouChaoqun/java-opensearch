@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+//option java_multiple_files = true;
+option java_package = "com.quancheng.manto.model";
+option java_outer_classname = "BaseModel";
+
+
+package com.quancheng.manto.model;
+
+// 基础响应信息
+message BaseResponse {
+    // 响应是否成功，true成功，false失败
+    bool success = 1;
+
+    // 错误信息
+    string message = 2;
+
+    // 错误码，0为成功，非零为失败 （1 ~ 100系统预留，前三位业务或应用编号，后三位为错误码）
+    int32 errorCode = 3;
+}
+
+// 标准分页请求
+message PageRequest {
+
+    // 当前页码
+    int32 currentPage = 1;
+
+    // 分页大小
+    int32 pageSize = 2;
+}
+
+// 标准分页响应
+message PageResponse {
+
+    // 当前页码
+    int32 currentPage = 1;
+
+    // 总共条目数
+    int64 totalAmount = 2;
+
+    // 总页数
+    int32 totalPages = 3;
+}
+
+message CountAgg {
+
+    //值(统计数)，比如统计菜系，显示：川菜(23)
+    string title = 1;
+
+    //值
+    string value = 2;
+
+    //统计数
+    string count = 3;
+
+    string tip = 4;
+}
+
+enum BoolValue {
+
+    EMPTY = 0;
+
+    FALSE = 1;
+
+    TRUE = 2;
+}
+

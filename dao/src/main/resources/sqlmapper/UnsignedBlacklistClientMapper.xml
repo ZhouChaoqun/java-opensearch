@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.quancheng.manto.dao.UnsignedBlacklistClientMapper">
+    <insert id="syncBlacklistClient" parameterType="java.lang.String">
+        insert into halia.halia_restaurant(`id`,`blacklist_client`)
+        select concat('unsigned',restaurant_id) id,
+        replace(substring(client_ids, 2, char_length(client_ids) - 2),'#',',')
+        from cacia.unsigned_blacklist
+        where restaurant_type = 'unsigned'
+        <if test="resIds != null and resIds.size() > 0">
+            and restaurant_id in
+            <foreach collection="resIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        on duplicate key update
+        blacklist_client = values(blacklist_client);
+    </insert>
+</mapper>

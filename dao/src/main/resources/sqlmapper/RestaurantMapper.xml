@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.quancheng.manto.dao.RestaurantMapper">
+    <sql id="unsigned_insert_head">
+        insert into halia_restaurant(`id`,`restaurant_id`, `amap_id`, `name`, `address`, `province`, `city`, `district`,
+        `contact_phone`, `avg`, `category`, `indoorUrls`, `outdoorUrl`, `type`, `status`, `rating`,
+        `latitude`, `longitude`, `meal_type`, `have_box`, `opening_time`, `invoice_title`, `tax_identification_number`,
+        `food_safety_archives`, `have_invoice`, `gonghai_id`, `online_restaurant_id`, `disable_mark`, `open_client`,
+        `blacklist_client`, `create_time`)
+    </sql>
+    <sql id="unsigned_insert_body">
+        select concat('unsigned',id) id, `id` restaurant_id, `amap_id`, `name`, `address`, `province`, `city`, `district`,
+        `contact_phone`, `avg`, `category`, `indoorUrls`, `outdoorUrl`, 'unsigned', `status`, `rating`,
+        `latitude`, `longitude`, `meal_type`, `have_box`, `opening_time`, `invoice_title`, `tax_identification_number`,
+        `food_safety_archives`, `have_invoice`, `gonghai_id`, `online_restaurant_id`, `disable_mark`,
+        (select group_concat(client_id separator ',') openClient
+                from cacia.unsigned_restaurant_client where status = 'BIND' and restaurant_id = res.id),
+        (select replace(substring(client_ids, 2, char_length(client_ids) - 2),'#',',') blacklistClient
+                from cacia.unsigned_blacklist where restaurant_type = 'unsigned' and amap_id = res.amap_id),
+        `gmt_created`
+        from cacia.unsigned_restaurant res
+    </sql>
+    <sql id="unsigned_duplicate_key_update">
+        on duplicate key update
+                    restaurant_id = values(restaurant_id),
+                    amap_id = values(amap_id),
+                    name = values(name),
+                    address = values(address),
+                    province = values(province),
+                    city = values(city),
+                    district = values(district),
+                    contact_phone = values(contact_phone),
+                    avg = values(avg),
+                    category = values(category),
+                    indoorUrls = values(indoorUrls),
+                    outdoorUrl = values(outdoorUrl),
+                    type = values(type),
+                    status = values(status),
+                    rating = values(rating),
+                    latitude = values(latitude),
+                    longitude = values(longitude),
+                    meal_type = values(meal_type),
+                    have_box = values(have_box),
+                    opening_time = values(opening_time),
+                    invoice_title = values(invoice_title),
+                    tax_identification_number = values(tax_identification_number),
+                    food_safety_archives = values(food_safety_archives),
+                    have_invoice = values(have_invoice),
+                    gonghai_id = values(gonghai_id),
+                    online_restaurant_id = values(online_restaurant_id),
+                    disable_mark = values(disable_mark),
+                    open_client = values(open_client),
+                    blacklist_client = values(blacklist_client),
+                    create_time = values(create_time);
+    </sql>
+    <delete id="delete" parameterType="java.lang.String">
+        delete from halia.halia_restaurant
+        where `type` = #{type}
+        and restaurant_id in
+        <foreach collection="resIds" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </delete>
+    <insert id="syncAllUnsignedRes">
+        <include refid="unsigned_insert_head" />
+        <include refid="unsigned_insert_body" />
+        <include refid="unsigned_duplicate_key_update" />
+    </insert>
+    <insert id="syncUnsignedResByTime">
+        <include refid="unsigned_insert_head" />
+        <include refid="unsigned_insert_body" />
+        where 1 = 1
+        <if test="startTime != null">
+            and res.gmt_modified <![CDATA[>=#{startTime} ]]>
+        </if>
+        <include refid="unsigned_duplicate_key_update" />
+    </insert>
+    <insert id="syncUnsignedResByResIds">
+        <include refid="unsigned_insert_head" />
+        <include refid="unsigned_insert_body" />
+        where 1 = 1
+        <if test="resIds != null and resIds.size() > 0">
+            and res.id in
+            <foreach collection="resIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <include refid="unsigned_duplicate_key_update" />
+    </insert>
+    <select id="unsignedResIdsNeedToDelete" resultType="java.lang.String">
+        select restaurant_id
+        from halia.halia_restaurant
+        where type = 'unsigned'
+        and restaurant_id not in (select id from cacia.unsigned_restaurant)
+    </select>
+    <sql id="online_insert_head">
+        insert into halia_restaurant(`id`,`restaurant_id`, `amap_id`, `name`, `address`, `province`, `city`, `district`,
+        `business_district`,`avg`, `category`, `type`, `status`,
+        `latitude`, `longitude`, `meal_type`, `opening_time`, `invoice_title`, `tax_identification_number`,
+        `have_invoice`, `gonghai_id`, `online_restaurant_id`,
+        `merchant_id`,`merchant_name`,`description`,`einvoice`,`online_time`,`create_time`,
+        `settlement_owner`)
+    </sql>
+    <sql id="online_insert_body">
+        select concat('online',res.id) id, res.id restaurant_id, master.gaode_id amap_id, res.name, lbs.address,
+        (select r.name from quancheng_db.16860_region r where r.id = lbs.province_id) province,
+        (select r.name from quancheng_db.16860_region r where r.id = lbs.city_id) city,
+        (select r.name from quancheng_db.16860_region r where r.id = lbs.area_id) district,
+        (select r.name from quancheng_db.16860_region r where r.id = lbs.shangquan_id) business_district,
+        res.consume, res.cook_style,
+        'online' type, if(res.status = 0, 'enable', 'disable') status,
+        lbs.lat, lbs.lng,
+        res.dinner_type meal_type,
+        res.business_hours, res.invoice_title, res.taxpayer_identification_number,
+        case when res.invoice_able = 0 then null
+        when res.invoice_able = 1 then 1
+        else 0 end as have_invoice,
+        res.gonghai_id, res.id online_restaurant_id,
+        res.merchant_id, (select m.name from quancheng_db.api_merchants m where m.id = res.merchant_id) merchant_name, res.description,
+        if (res.einvoice = 'true', 1, 0) einvoice, master.online_time, res.created_at,
+        res.settlement_owner
+        from quancheng_db.api_restaurants res
+        left join quancheng_db.api_lbs_infos lbs on lbs.id = res.lbs_id
+        left join quancheng_db.api_restaurants_master master on master.id = res.gonghai_id and master.deleted_at is null
+        where res.deleted_at is null
+    </sql>
+    <sql id="online_duplicate_key_update">
+        on duplicate key update
+                    restaurant_id = values(restaurant_id),
+                    amap_id = values(amap_id),
+                    name = values(name),
+                    address = values(address),
+                    province = values(province),
+                    city = values(city),
+                    district = values(district),
+                    business_district = values(business_district),
+                    avg = values(avg),
+                    category = values(category),
+                    type = values(type),
+                    status = values(status),
+                    latitude = values(latitude),
+                    longitude = values(longitude),
+                    meal_type = values(meal_type),
+                    opening_time = values(opening_time),
+                    invoice_title = values(invoice_title),
+                    tax_identification_number = values(tax_identification_number),
+                    have_invoice = values(have_invoice),
+                    gonghai_id = values(gonghai_id),
+                    online_restaurant_id = values(online_restaurant_id),
+                    merchant_id = values(merchant_id),
+                    merchant_name = values(merchant_name),
+                    description = values(description),
+                    einvoice = values(einvoice),
+                    online_time = values(online_time),
+                    create_time = values(create_time),
+                    settlement_owner = values(settlement_owner);
+    </sql>
+    <insert id="syncOnlineResByResIds">
+        <include refid="online_insert_head" />
+        <include refid="online_insert_body" />
+        <if test="resIds != null and resIds.size() > 0">
+            and res.id in
+            <foreach collection="resIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <include refid="online_duplicate_key_update" />
+    </insert>
+    <select id="onlineResIdsNeedToDelete" resultType="java.lang.String">
+        select restaurant_id
+        from halia.halia_restaurant
+        where type = 'online'
+        and restaurant_id not in (select id from quancheng_db.api_restaurants where deleted_at is null)
+    </select>
+    <select id="existSourceOnlineRes" parameterType="java.lang.String" resultType="java.lang.String">
+        select id from quancheng_db.api_restaurants
+        where deleted_at is null
+    </select>
+    <sql id="special_insert_head">
+        insert into halia_restaurant(`id`,`restaurant_id`, `amap_id`, `name`, `address`, `city`, `district`,
+        `contact_phone`, `avg`, `category`, `indoorUrls`, `outdoorUrl`, `type`, `status`, `rating`,
+        `latitude`, `longitude`, `gonghai_id`, `open_client`, `create_time`)
+    </sql>
+    <sql id="special_insert_body">
+        select concat('special',id) id, id restaurant_id, `gould_id`, `aurant_name`, `aurant_address`, `aurant_city`,
+        `aurant_district`,`contact_phone`, `price`, `category`, `indoorUrls`, `outdoorUrl`, 'special',
+        if(status = 'success', 'enable', 'disable') status,
+        `rating`,`latitude`, `longitude`, `gonghai_id`,`company_id`,`gmt_created`
+        from cacia.restaurant_info
+        where online_status = 'offline'
+    </sql>
+    <sql id="special_duplicate_key_update">
+        on duplicate key update
+        restaurant_id = values(restaurant_id),
+        amap_id = values(amap_id),
+        name = values(name),
+        address = values(address),
+        city = values(city),
+        district = values(district),
+        contact_phone = values(contact_phone),
+        avg = values(avg),
+        category = values(category),
+        indoorUrls = values(indoorUrls),
+        outdoorUrl = values(outdoorUrl),
+        type = values(type),
+        status = values(status),
+        rating = values(rating),
+        latitude = values(latitude),
+        longitude = values(longitude),
+        gonghai_id = values(gonghai_id),
+        open_client = values(open_client),
+        create_time = values(create_time);
+    </sql>
+    <insert id="syncSpecialResByResIds">
+        <include refid="special_insert_head" />
+        <include refid="special_insert_body" />
+        <if test="resIds != null and resIds.size() > 0">
+            and id in
+            <foreach collection="resIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <include refid="special_duplicate_key_update" />
+    </insert>
+    <select id="specialResIdsNeedToDelete" resultType="java.lang.String">
+        select restaurant_id
+        from halia.halia_restaurant
+        where type = 'special'
+        and restaurant_id not in (select id from cacia.restaurant_info where online_status = 'offline')
+    </select>
+</mapper>

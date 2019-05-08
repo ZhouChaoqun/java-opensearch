@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.quancheng.manto.dao.OnlineResExtraInfoMapper">
+    <insert id="syncReservationInfo">
+        insert into halia.halia_restaurant(`id`, `have_box`, `support_reservation`,`advance_hour`,`need_advance`,`box_num`,
+        `box_min_consume`)
+        select concat('online',res.id) id,
+        if(yd.box_num = 0, 0, 1) have_box,
+        if (yd.id is null, 0, 1) support_reservation,
+        yd.advance_hour,
+        if (yd.advance_hour = 0, 0, 1) need_advance,
+        yd.box_num,
+        yd.box_min_consume
+        from quancheng_db.api_restaurants res
+        left join quancheng_db.api_yuding yd on yd.restaurant_id = res.id and yd.status = 0 and yd.deleted_at is null
+        where res.deleted_at is null
+        <if test="resIds != null and resIds.size() > 0">
+            and res.id in
+            <foreach collection="resIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        on duplicate key update
+        have_box = values(have_box),
+        support_reservation = values(support_reservation),
+        advance_hour = values(advance_hour),
+        need_advance = values(need_advance),
+        box_num = values(box_num),
+        box_min_consume = values(box_min_consume);
+    </insert>
+    <insert id="syncTakeawayInfo">
+        insert into halia.halia_restaurant(`id`, `support_takeaway`, `advance_time`,`delivery_desc`,
+        `max_items`,`max_type`,`cancel_rule`,`shipping_dis`,`shipping_fee`,`shipping_fee_min`, `packing_box_fee`,
+        `polygon`,`have_polygon`)
+        select concat('online',res.id) id,
+        if (wm.id is null, 0, 1) support_takeaway,
+        wm.advance_time,
+        wm.delivery_desc,
+        wm.max_items,
+        case when wm.max_type = 1 then 'byNum' when wm.max_type = 2 then 'byAmount' else null end as max_type,
+        wm.cancel_rule, wm.shipping_dis, ship.shipping_fee, wm.shipping_fee_min, pack.packing_box_fee,
+        if (wm.polygon is null or wm.polygon = '', null, replace(wm.polygon, ';', ',')) polygon,
+        if (wm.polygon is null or wm.polygon = '', 0, 1) have_polygon
+        from quancheng_db.api_restaurants res
+        left join quancheng_db.api_waimai_restaurant_detail wm on wm.restaurant_id = res.id and wm.deleted_at is null
+        left join quancheng_db.api_waimai_packing_box_fee pack on pack.waimai_restaurant_id = wm.id and pack.deleted_at is null
+        left join quancheng_db.api_waimai_shipping_fee ship on ship.waimai_restaurant_id = wm.id  and ship.deleted_at is null
+        where res.deleted_at is null
+        <if test="resIds != null and resIds.size() > 0">
+            and res.id in
+            <foreach collection="resIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        on duplicate key update
+        support_takeaway = values(support_takeaway),
+        advance_time = values(advance_time),
+        delivery_desc = values(delivery_desc),
+        max_items = values(max_items),
+        max_type = values(max_type),
+        cancel_rule = values(cancel_rule),
+        shipping_dis = values(shipping_dis),
+        shipping_fee = values(shipping_fee),
+        shipping_fee_min = values(shipping_fee_min),
+        packing_box_fee = values(packing_box_fee),
+        polygon = values(polygon),
+        have_polygon = values(have_polygon);
+    </insert>
+    <insert id="syncSettlementInfo">
+        insert into halia.halia_restaurant(`id`,`settlement_type`,`rebate_id`,`rebate_status`,`rebate_type`,
+        `rebate_biz_type`,`rebate_percent`,`rebate_settlement_type`,`rebate_rule`,`effective_time`,
+        `balance_acount_id`,`total_amount`,`available_amount`,`frozen_amount`)
+        select concat('online',res.id) id,st.type settlement_type,
+        sri.rebate_id, sri.status rebate_status, sri.type rebate_type,
+        sri.biz_type rebate_biz_type, sri.rebate_percent, sri.rebate_settlement_type, sri.rebate_rule,
+        sri.effective_time,sba.balance_acount_id, sba.total_amount, sba.available_amount, sba.frozen_amount
+        from quancheng_db.api_restaurants res
+        left join terra.settlement_term st on st.shop_id = convert(res.id, char) and st.status = 'enable'
+        left join terra.settlement_rebate_info sri on sri.shop_id = convert(res.id, char) and sri.status = 'ENABLE'
+        left join terra.settlement_balance_account sba on sba.business_id = convert(res.id, char) and sba.status = 'enable'
+        where res.deleted_at is null
+        <if test="resIds != null and resIds.size() > 0">
+            and res.id in
+            <foreach collection="resIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        on duplicate key update
+        settlement_type = values(settlement_type),
+        rebate_id = values(rebate_id),
+        rebate_status = values(rebate_status),
+        rebate_type = values(rebate_type),
+        rebate_biz_type = values(rebate_biz_type),
+        rebate_percent = values(rebate_percent),
+        rebate_settlement_type = values(rebate_settlement_type),
+        rebate_rule = values(rebate_rule),
+        effective_time = values(effective_time),
+        balance_acount_id = values(balance_acount_id),
+        total_amount = values(total_amount),
+        available_amount = values(available_amount),
+        frozen_amount = values(frozen_amount);
+    </insert>
+    <insert id="syncOpenClient">
+        insert into halia.halia_restaurant(`id`,`open_client`)
+        select concat('online',res.id) id,
+        (select group_concat(client_id separator ',') as openClient
+        from quancheng_db.16860_restaurant_client
+        where deleted_at is null and restaurant_id = res.id)
+        from quancheng_db.api_restaurants res
+        where res.deleted_at is null
+        <if test="resIds != null and resIds.size() > 0">
+            and res.id in
+            <foreach collection="resIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        on duplicate key update
+        open_client = values(open_client);
+    </insert>
+    <insert id="syncBlacklistClient">
+        insert into halia.halia_restaurant(`id`,`blacklist_client`)
+        select concat('online',res.id) id,
+        (select group_concat(client_id separator ',') as blacklistClient
+        from  quancheng_db.api_client_blacklists
+        where deleted_at is null and restaurant_id = res.id)
+        from quancheng_db.api_restaurants res
+        where res.deleted_at is null
+        <if test="resIds != null and resIds.size() > 0">
+            and res.id in
+            <foreach collection="resIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        on duplicate key update
+        blacklist_client = values(blacklist_client);
+    </insert>
+    <insert id="syncHitNum">
+        insert into halia.halia_restaurant(`id`,`hit_num`)
+        select concat('online',res.id) id,
+        (select count(1)
+        from quancheng_db.16860_restaurant_hits where restaurant_id = res.id) hit_num
+        from quancheng_db.api_restaurants res
+        where res.deleted_at is null
+        <if test="resIds != null and resIds.size() > 0">
+            and res.id in
+            <foreach collection="resIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        on duplicate key update
+        hit_num = values(hit_num);
+    </insert>
+    <select id="selectOnlineDoors" parameterType="java.lang.String" resultType="com.quancheng.manto.dataobject.ResIndoorOutdoorDO">
+        select id, indoor, outdoor from quancheng_db.api_restaurants
+        where deleted_at is null
+        <if test="resIds != null and resIds.size() > 0">
+            and id in
+            <foreach collection="resIds" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+    <select id="selectOnlinePics" parameterType="java.lang.String" resultType="com.quancheng.manto.dataobject.PicDO">
+        select id, concat('https://img.shangyantong.com',path) url from quancheng_db.16860_picture
+        where id in
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </select>
+    <insert id="syncOnlineDoorUrls">
+        insert into halia_restaurant(`id`,`indoorUrls`, `outdoorUrl`)
+        values
+        <foreach collection="doors" item="item" separator=",">
+            (#{item.id}, #{item.indoor}, #{item.outdoor})
+        </foreach>
+        on duplicate key update
+        indoorUrls = values(indoorUrls),
+        outdoorUrl = values(outdoorUrl);
+    </insert>
+</mapper>
